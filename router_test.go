@@ -1,1 +1,266 @@
 package router
+
+import (
+	"context"
+	"net/http"
+	"testing"
+)
+
+type responseWriterMock struct {
+	statusCode int
+}
+
+func (mock *responseWriterMock) Header() http.Header {
+	return http.Header{}
+}
+
+func (mock *responseWriterMock) Write([]byte) (int, error) {
+	return 0, nil
+}
+
+func (mock *responseWriterMock) WriteHeader(statusCode int) {
+	mock.statusCode = statusCode
+}
+
+func Test_NewRouter(t *testing.T) {
+	router := NewRouter()
+	if router == nil {
+		t.Errorf("NewRouter() failed: instance is <nil>")
+	}
+	if router != nil && router.tree == nil {
+		t.Errorf("NewRouter() failed: instance.tree is <nil>")
+	}
+}
+
+func Test_Query_Default(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	query := Query(req)
+	if query == nil {
+		t.Error("Query() failed: got <nil>, expected <empty>")
+	}
+}
+
+func Test_Params_Default(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	params := Params(req)
+	if params == nil {
+		t.Error("Params() failed: got <nil>, expected <empty>")
+	}
+}
+
+func Test_QueryValues(t *testing.T) {
+	type testCase struct {
+		lookup   string
+		expected []string
+	}
+	tests := []testCase{
+		{"test", []string{"ok"}},
+		{"notfound", []string{}},
+	}
+
+	for _, tc := range tests {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		query := make(RouteQuery)
+		query["test"] = []string{"ok"}
+		ctx := context.WithValue(req.Context(), queryKey, query)
+		req = req.WithContext(ctx)
+
+		result := QueryValues(req, tc.lookup)
+		if len(result) != len(tc.expected) {
+			t.Errorf("QueryValues(%s) failed: got %v items, expected %v items", tc.lookup, len(result), len(tc.expected))
+		}
+		if len(tc.expected) > 0 && result[0] != tc.expected[0] {
+			t.Errorf("QueryValues(%s) failed: got %v, expected %v", tc.lookup, result[0], tc.expected[0])
+		}
+	}
+}
+
+func Test_QueryValue(t *testing.T) {
+	type testCase struct {
+		lookup   string
+		expected string
+	}
+	tests := []testCase{
+		{"test", "ok"},
+		{"notfound", ""},
+	}
+
+	for _, tc := range tests {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		query := make(RouteQuery)
+		query["test"] = []string{"ok", "second"}
+		ctx := context.WithValue(req.Context(), queryKey, query)
+		req = req.WithContext(ctx)
+
+		result := QueryValue(req, tc.lookup)
+		if result != tc.expected {
+			t.Errorf("QueryValue(%s) failed: got %v, expected %v", tc.lookup, result[0], tc.expected[0])
+		}
+	}
+}
+
+func Test_Param(t *testing.T) {
+	type testCase struct {
+		lookup   string
+		expected string
+	}
+	tests := []testCase{
+		{"test", "ok"},
+		{"notfound", ""},
+	}
+
+	for _, tc := range tests {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		params := make(RouteParams)
+		params["test"] = "ok"
+		ctx := context.WithValue(req.Context(), paramsKey, params)
+		req = req.WithContext(ctx)
+
+		result := Param(req, tc.lookup)
+		if result != tc.expected {
+			t.Errorf("Param(%s) failed: got %v, expected %v", tc.lookup, result, tc.expected)
+		}
+	}
+}
+
+func Test_Router_HandleFunc(t *testing.T) {
+	type testCase struct {
+		pattern     string
+		expectedNil bool
+	}
+	tests := []testCase{
+		{"", true},
+		{"api", true},
+		{"/api", false},
+	}
+
+	for _, tc := range tests {
+		optionApplied := false
+		option := func(r *Route) {
+			optionApplied = true
+		}
+		handle := func(http.ResponseWriter, *http.Request) {}
+		router := &Router{tree: &Node{}}
+		result := router.HandleFunc(tc.pattern, handle, option)
+		if tc.expectedNil {
+			if result != nil {
+				t.Errorf("Router.HandleFunc(%s) failed: expected <nil>", tc.pattern)
+			}
+		} else {
+			if result == nil {
+				t.Errorf("Router.HandleFunc(%s) failed: expected instance", tc.pattern)
+			} else {
+				if result.node == nil {
+					t.Errorf("Router.HandleFunc(%s) failed: expected instance.node not <nil>", tc.pattern)
+				}
+				if result.Handler == nil {
+					t.Errorf("Router.HandleFunc(%s) failed: expected instance.Handler not <nil>", tc.pattern)
+				}
+				if !optionApplied {
+					t.Errorf("Router.HandleFunc(%s) failed: option not applied", tc.pattern)
+				}
+			}
+		}
+	}
+}
+
+func Test_Router_Handle(t *testing.T) {
+	type testCase struct {
+		pattern     string
+		expectedNil bool
+	}
+	tests := []testCase{
+		{"", true},
+		{"api", true},
+		{"/api", false},
+	}
+
+	for _, tc := range tests {
+		optionApplied := false
+		option := func(r *Route) {
+			optionApplied = true
+		}
+		handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+		router := &Router{tree: &Node{}}
+		result := router.Handle(tc.pattern, handler, option)
+		if tc.expectedNil {
+			if result != nil {
+				t.Errorf("Router.Handle(%s) failed: expected <nil>", tc.pattern)
+			}
+		} else {
+			if result == nil {
+				t.Errorf("Router.Handle(%s) failed: expected instance", tc.pattern)
+			} else {
+				if result.node == nil {
+					t.Errorf("Router.Handle(%s) failed: expected instance.node not <nil>", tc.pattern)
+				}
+				if result.Handler == nil {
+					t.Errorf("Router.Handle(%s) failed: expected instance.Handler not <nil>", tc.pattern)
+				}
+				if !optionApplied {
+					t.Errorf("Router.Handle(%s) failed: option not applied", tc.pattern)
+				}
+			}
+		}
+	}
+}
+
+func Test_Router_findRoute(t *testing.T) {
+	type testCase struct {
+		pattern     string
+		expectedNil bool
+	}
+	tests := []testCase{
+		{"/api", false},
+		{"/notfound", true},
+	}
+
+	for _, tc := range tests {
+		router := &Router{
+			tree: &Node{
+				Nodes: []*Node{
+					{
+						Segment: "api",
+						Type:    NodeTypePath,
+						Route:   &Route{},
+					},
+				},
+			},
+		}
+
+		params := make(RouteParams)
+		result := router.findRoute(tc.pattern, params)
+		if tc.expectedNil && result != nil {
+			t.Errorf("Router.findNode(%s) failed: Expected <nil>", tc.pattern)
+		}
+		if !tc.expectedNil && result == nil {
+			t.Errorf("Router.findNode(%s) failed: Expected not <nil>", tc.pattern)
+		}
+	}
+}
+
+func Test_Router_ServeHttp(t *testing.T) {
+	type testCase struct {
+		pattern  string
+		expected int
+	}
+	handle := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	tests := []testCase{
+		{"/api", 200},
+		{"/test", 404},
+	}
+
+	router := NewRouter()
+	router.HandleFunc("/api", handle)
+	for _, tc := range tests {
+		req, _ := http.NewRequest(http.MethodGet, tc.pattern, nil)
+		rsp := &responseWriterMock{}
+		router.ServeHTTP(rsp, req)
+
+		if rsp.statusCode != tc.expected {
+			t.Errorf("Router.ServeHTTP(%s) failed: invalid status code: got %v, expected %v", tc.pattern, rsp.statusCode, tc.expected)
+		}
+	}
+}

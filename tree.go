@@ -28,13 +28,10 @@ func (n *Node) BuildTree(pattern string) *Node {
 	}
 
 	segments := strings.Split(n.getPath(pattern), "/")
-	if len(segments) == 0 {
-		return nil
-	}
 	return n.buildSegment(segments[1:])
 }
 
-func (n *Node) FindNode(pattern string) *Node {
+func (n *Node) FindNode(pattern string, params RouteParams) *Node {
 	if pattern == "" {
 		return nil
 	}
@@ -43,10 +40,7 @@ func (n *Node) FindNode(pattern string) *Node {
 	}
 
 	segments := strings.Split(n.getPath(pattern), "/")
-	if len(segments) == 0 {
-		return nil
-	}
-	return n.findSegment(segments[1:])
+	return n.findSegment(segments[1:], params)
 }
 
 func (n *Node) getPath(pattern string) string {
@@ -82,11 +76,12 @@ func (n *Node) buildSegment(segments []string) *Node {
 
 	// Create a node for the segment and append to parent
 	if node == nil || (node.hasHandler() && numSegments == 1) {
+		nodeType := n.getNodeType(segment)
+		nodeValue := n.getNodeValue(segment, nodeType)
 		node = &Node{
-			Segment: segment,
-			Type:    NodeTypePath,
+			Segment: nodeValue,
+			Type:    nodeType,
 		}
-		//TODO: Check if segment is parameter: {name} and change type to NodeTypeParam
 		if n.Nodes == nil {
 			n.Nodes = make([]*Node, 0)
 		}
@@ -97,7 +92,7 @@ func (n *Node) buildSegment(segments []string) *Node {
 	return node.buildSegment(segments[1:])
 }
 
-func (n *Node) findSegment(segments []string) *Node {
+func (n *Node) findSegment(segments []string, params RouteParams) *Node {
 	// Validate the segments
 	numSegments := len(segments)
 	if numSegments == 0 {
@@ -107,13 +102,26 @@ func (n *Node) findSegment(segments []string) *Node {
 		return n
 	}
 	if segments[0] == "" && numSegments > 1 {
-		return n.findSegment(segments[1:])
+		return n.findSegment(segments[1:], params)
 	}
 
+	segment := strings.ToLower(segments[0])
+	child := n.findChildSegment(segment, params)
+	if child != nil {
+		return child.findSegment(segments[1:], params)
+	}
+	return nil
+}
+
+func (n *Node) findChildSegment(segment string, params RouteParams) *Node {
 	if n.Nodes != nil {
 		for _, node := range n.Nodes {
-			if node.Segment == strings.ToLower(segments[0]) {
-				return node.findSegment(segments[1:])
+			if node.Type == NodeTypeParam {
+				params[node.Segment] = segment
+				return node
+			}
+			if node.Type == NodeTypePath && node.Segment == segment {
+				return node
 			}
 		}
 	}
@@ -126,6 +134,24 @@ func (n *Node) hasRoute() bool {
 
 func (n *Node) hasHandler() bool {
 	return n.hasRoute() && n.Route.Handler != nil
+}
+
+func (n *Node) getNodeType(segment string) NodeType {
+	if n.isParamSegment(segment) {
+		return NodeTypeParam
+	}
+	return NodeTypePath
+}
+
+func (n *Node) getNodeValue(segment string, nodeType NodeType) string {
+	if nodeType == NodeTypeParam {
+		return segment[1 : len(segment)-1]
+	}
+	return segment
+}
+
+func (n *Node) isParamSegment(segment string) bool {
+	return segment != "" && segment[0] == '{' && segment[len(segment)-1] == '}'
 }
 
 func (t NodeType) String() string {
