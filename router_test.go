@@ -250,10 +250,12 @@ func Test_Router_ServeHttp(t *testing.T) {
 	tests := []testCase{
 		{"/api", 200},
 		{"/test", 404},
+		{"/get", 405},
 	}
 
 	router := NewRouter()
 	router.HandleFunc("/api", handle)
+	router.HandleFunc("/get", handle).AllowedMethod(http.MethodPost)
 	for _, tc := range tests {
 		req, _ := http.NewRequest(http.MethodGet, tc.pattern, nil)
 		rsp := &responseWriterMock{}

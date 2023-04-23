@@ -12,16 +12,17 @@ type Route struct {
 	Handler http.Handler
 }
 
-func (r *Route) AllowedMethod(method string) {
+func (r *Route) AllowedMethod(method string) *Route {
 	if r.methods == nil {
 		r.methods = make([]string, 0)
 	}
 	for _, m := range r.methods {
 		if m == method {
-			return
+			return r
 		}
 	}
 	r.methods = append(r.methods, method)
+	return r
 }
 
 func (r *Route) IsMethodAllowed(method string) bool {
