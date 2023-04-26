@@ -5,13 +5,13 @@ import (
 	"net/http"
 )
 
-type contextKey string
+type ContextKey string
 type RouteQuery map[string][]string
 type RouteParams map[string]string
 
 const (
-	queryKey  contextKey = "query"
-	paramsKey contextKey = "params"
+	queryKey  ContextKey = "router::query"
+	paramsKey ContextKey = "router::params"
 )
 
 type Router struct {
@@ -73,35 +73,60 @@ func (r *Router) Handle(pattern string, handler http.Handler, opts ...RouteOptio
 	for _, opt := range opts {
 		opt(route)
 	}
-	node.Route = route
-	return node.Route
+
+	if node.Routes == nil {
+		node.Routes = make([]*Route, 0)
+	}
+	node.Routes = append(node.Routes, route)
+	return route
 }
 
-func (r *Router) findRoute(pattern string, params RouteParams) *Route {
+func (r *Router) findRoute(pattern string, params RouteParams) []*Route {
 	node := r.tree.FindNode(pattern, params)
 	if node == nil {
 		return nil
 	}
-	return node.Route
+	if node.Routes == nil || len(node.Routes) == 0 {
+		return nil
+	}
+	return node.Routes
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 	params := make(RouteParams)
-	route := r.findRoute(path, params)
-	if route == nil || route.Handler == nil {
+	routes := r.findRoute(path, params)
+	if routes == nil || len(routes) == 0 {
 		http.NotFound(w, req)
 		return
 	}
-	if !route.IsMethodAllowed(req.Method) {
-		http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
-		return
+
+	hasHandler := false
+	for _, route := range routes {
+		if route.Handler == nil {
+			continue
+		}
+		hasHandler = true
+
+		if route.IsMethodAllowed(req.Method) {
+			r.serverHandle(route.Handler, params, w, req)
+			return
+		}
 	}
 
+	if hasHandler {
+		http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
+	} else {
+		http.NotFound(w, req)
+	}
+}
+
+func (r *Router) serverHandle(h http.Handler, p RouteParams, w http.ResponseWriter, req *http.Request) {
 	query := req.URL.Query()
 
 	ctx := req.Context()
 	ctx = context.WithValue(ctx, queryKey, query)
-	ctx = context.WithValue(ctx, paramsKey, params)
-	route.Handler.ServeHTTP(w, req.WithContext(ctx))
+	ctx = context.WithValue(ctx, paramsKey, p)
+	h.ServeHTTP(w, req.WithContext(ctx))
+	return
 }

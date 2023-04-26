@@ -212,6 +212,8 @@ func Test_Router_findRoute(t *testing.T) {
 	}
 	tests := []testCase{
 		{"/api", false},
+		{"/nilroutes", true},
+		{"/emptyroutes", true},
 		{"/notfound", true},
 	}
 
@@ -222,7 +224,17 @@ func Test_Router_findRoute(t *testing.T) {
 					{
 						Segment: "api",
 						Type:    NodeTypePath,
-						Route:   &Route{},
+						Routes:  []*Route{{}},
+					},
+					{
+						Segment: "nilroutes",
+						Type:    NodeTypePath,
+						Routes:  nil,
+					},
+					{
+						Segment: "emptyroutes",
+						Type:    NodeTypePath,
+						Routes:  []*Route{},
 					},
 				},
 			},
@@ -251,11 +263,13 @@ func Test_Router_ServeHttp(t *testing.T) {
 		{"/api", 200},
 		{"/test", 404},
 		{"/get", 405},
+		{"/nohandler", 404},
 	}
 
 	router := NewRouter()
 	router.HandleFunc("/api", handle)
 	router.HandleFunc("/get", handle).AllowedMethod(http.MethodPost)
+	router.Handle("/nohandler", nil)
 	for _, tc := range tests {
 		req, _ := http.NewRequest(http.MethodGet, tc.pattern, nil)
 		rsp := &responseWriterMock{}
@@ -264,5 +278,85 @@ func Test_Router_ServeHttp(t *testing.T) {
 		if rsp.statusCode != tc.expected {
 			t.Errorf("Router.ServeHTTP(%s) failed: invalid status code: got %v, expected %v", tc.pattern, rsp.statusCode, tc.expected)
 		}
+	}
+}
+
+func Test_Router_ServeHttp_MultiMethod_SingleHandler(t *testing.T) {
+	type testCase struct {
+		pattern  string
+		method   string
+		expected int
+	}
+	tests := []testCase{
+		{"/api", http.MethodGet, 200},
+		{"/api", http.MethodPut, 200},
+		{"/api", http.MethodDelete, 405},
+	}
+	handlerCalled := 0
+	handlerCalledExpected := 2
+	handle := func(w http.ResponseWriter, r *http.Request) {
+		handlerCalled++
+		w.WriteHeader(http.StatusOK)
+	}
+
+	router := NewRouter()
+	router.HandleFunc("/api", handle).AllowedMethod(http.MethodGet)
+	router.HandleFunc("/api", handle).AllowedMethod(http.MethodPut)
+	for _, tc := range tests {
+		req, _ := http.NewRequest(tc.method, tc.pattern, nil)
+		rsp := &responseWriterMock{}
+		router.ServeHTTP(rsp, req)
+
+		if rsp.statusCode != tc.expected {
+			t.Errorf("Router.ServeHTTP(%s) failed: invalid status code: got %v, expected %v", tc.method, rsp.statusCode, tc.expected)
+		}
+	}
+
+	if handlerCalled != handlerCalledExpected {
+		t.Errorf("Router.ServerHTTP() failed: handler called %v times, expected %v", handlerCalled, handlerCalledExpected)
+	}
+}
+
+func Test_Router_ServeHttp_MultiMethod_MultiHandler(t *testing.T) {
+	type testCase struct {
+		pattern  string
+		method   string
+		expected int
+	}
+	tests := []testCase{
+		{"/api", http.MethodGet, 200},
+		{"/api", http.MethodPut, 200},
+		{"/api", http.MethodDelete, 405},
+	}
+
+	getHandlerCalled := 0
+	getHandle := func(w http.ResponseWriter, r *http.Request) {
+		getHandlerCalled++
+		w.WriteHeader(http.StatusOK)
+	}
+	putHandlerCalled := 0
+	putHandle := func(w http.ResponseWriter, r *http.Request) {
+		putHandlerCalled++
+		w.WriteHeader(http.StatusOK)
+	}
+
+	router := NewRouter()
+	router.HandleFunc("/api", getHandle).AllowedMethod(http.MethodGet)
+	router.HandleFunc("/api", putHandle).AllowedMethod(http.MethodPut)
+	for _, tc := range tests {
+		req, _ := http.NewRequest(tc.method, tc.pattern, nil)
+		rsp := &responseWriterMock{}
+		router.ServeHTTP(rsp, req)
+
+		if rsp.statusCode != tc.expected {
+			t.Errorf("Router.ServeHTTP(%s) failed: invalid status code: got %v, expected %v", tc.method, rsp.statusCode, tc.expected)
+		}
+	}
+
+	if getHandlerCalled != 1 {
+		t.Errorf("Router.ServerHTTP(%s) failed: handler called %v times, expected 1", http.MethodGet, getHandlerCalled)
+	}
+	if putHandlerCalled != 1 {
+		t.Errorf("Router.ServerHTTP(%s) failed: handler called %v times, expected 1", http.MethodPut, putHandlerCalled)
 	}
 }

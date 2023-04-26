@@ -6,22 +6,6 @@ import (
 	"testing"
 )
 
-func Test_Node_Defaults(t *testing.T) {
-	node := &Node{}
-	if node.Segment != "" {
-		t.Errorf("New node default segment got %v, expected <empty>", node.Segment)
-	}
-	if node.Type != NodeTypeUndefined {
-		t.Errorf("New node default type got %v, expected %v", node.Type, NodeTypeUndefined)
-	}
-	if node.Route != nil {
-		t.Error("New node default route got value, expected <nil>")
-	}
-	if node.Nodes != nil {
-		t.Error("New node default child nodes got array, expected <nil>")
-	}
-}
-
 func Test_Node_BuildTree(t *testing.T) {
 	type testCase struct {
 		pattern  string
@@ -145,8 +129,8 @@ func Test_Node_buildSegment(t *testing.T) {
 	node := &Node{Segment: "next"}
 	nodeWithHandler := &Node{
 		Segment: "next",
-		Route: &Route{
-			Handler: http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+		Routes: []*Route{
+			{Handler: http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})},
 		},
 	}
 	rootWithChild := &Node{
@@ -263,62 +247,6 @@ func Test_Node_getNodeValue(t *testing.T) {
 		result := node.getNodeValue(tc.segment, tc.nodeType)
 		if result != tc.expected {
 			t.Errorf("Node.getNodeValue(%s) failed: got %s, expected %s", tc.segment, result, tc.expected)
-		}
-	}
-}
-
-func Test_Node_hasRoute(t *testing.T) {
-	type testCase struct {
-		node     *Node
-		expected bool
-	}
-	tests := []testCase{
-		{&Node{
-			Segment: "WithRoute",
-			Route:   &Route{},
-		}, true},
-		{&Node{
-			Segment: "WithNoRoute",
-			Route:   nil,
-		}, false},
-	}
-
-	for _, tc := range tests {
-		result := tc.node.hasRoute()
-		if result != tc.expected {
-			t.Errorf("Node.hasRoute(%s) failed: got %v, expected %v", tc.node.Segment, result, tc.expected)
-		}
-	}
-}
-
-func Test_Node_hasHandler(t *testing.T) {
-	type testCase struct {
-		node     *Node
-		expected bool
-	}
-	tests := []testCase{
-		{&Node{
-			Segment: "WithHandler",
-			Route: &Route{
-				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
-			},
-		}, true},
-		{&Node{
-			Segment: "WithNoHandler",
-			Route: &Route{
-				Handler: nil,
-			},
-		}, false},
-		{&Node{
-			Segment: "WithNoRoute",
-			Route:   nil,
-		}, false},
-	}
-
-	for _, tc := range tests {
-		result := tc.node.hasHandler()
-		if result != tc.expected {
-			t.Errorf("Node.hasHandler(%s) failed: got %v, expected %v", tc.node.Segment, result, tc.expected)
 		}
 	}
 }

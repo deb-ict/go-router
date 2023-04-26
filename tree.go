@@ -4,6 +4,8 @@ import (
 	"strings"
 )
 
+type NodeFilter func(n *Node)
+
 type NodeType int
 
 const (
@@ -15,8 +17,8 @@ const (
 type Node struct {
 	Segment string
 	Type    NodeType
-	Route   *Route
 	Nodes   []*Node
+	Routes  []*Route
 }
 
 func (n *Node) BuildTree(pattern string) *Node {
@@ -75,7 +77,7 @@ func (n *Node) buildSegment(segments []string) *Node {
 	}
 
 	// Create a node for the segment and append to parent
-	if node == nil || (node.hasHandler() && numSegments == 1) {
+	if node == nil /*|| (node.hasHandler() && numSegments == 1)*/ {
 		nodeType := n.getNodeType(segment)
 		nodeValue := n.getNodeValue(segment, nodeType)
 		node = &Node{
@@ -126,14 +128,6 @@ func (n *Node) findChildSegment(segment string, params RouteParams) *Node {
 		}
 	}
 	return nil
-}
-
-func (n *Node) hasRoute() bool {
-	return n.Route != nil
-}
-
-func (n *Node) hasHandler() bool {
-	return n.hasRoute() && n.Route.Handler != nil
 }
 
 func (n *Node) getNodeType(segment string) NodeType {
