@@ -15,12 +15,14 @@ const (
 )
 
 type Router struct {
-	tree *Node
+	tree        *Node
+	middlewares []middleware
 }
 
 func NewRouter() *Router {
 	r := &Router{
-		tree: &Node{},
+		tree:        &Node{},
+		middlewares: make([]middleware, 0),
 	}
 	return r
 }
@@ -127,6 +129,10 @@ func (r *Router) serverHandle(h http.Handler, p RouteParams, w http.ResponseWrit
 	ctx := req.Context()
 	ctx = context.WithValue(ctx, queryKey, query)
 	ctx = context.WithValue(ctx, paramsKey, p)
-	h.ServeHTTP(w, req.WithContext(ctx))
-	return
+
+	handler := h
+	for i := len(r.middlewares) - 1; i >= 0; i-- {
+		handler = r.middlewares[i].Middleware(handler)
+	}
+	handler.ServeHTTP(w, req.WithContext(ctx))
 }
