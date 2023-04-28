@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	DefaultApiKeyHeaderName     string = "X-Api-Key"
-	DefaultApiKeyQueryParamName string = "api-key"
+	DefaultApiKeyHeaderName     string = "X-API-KEY"
+	DefaultApiKeyQueryParamName string = "api_key"
 	AuthorizationHeaderName     string = "Authorization"
 	BearerTokenPrefix           string = "Bearer "
 	BasicTokenPrex              string = "Basic "
@@ -29,6 +29,6 @@ func GetAuthenticationContext(ctx context.Context) *AuthenticationContext {
 	return value.(*AuthenticationContext)
 }
 
-func SetAuthenticationContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, authenticationContextKey, nil)
+func SetAuthenticationContext(ctx context.Context, auth *AuthenticationContext) context.Context {
+	return context.WithValue(ctx, authenticationContextKey, auth)
 }

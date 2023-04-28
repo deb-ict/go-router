@@ -8,6 +8,6 @@ func AllowedMethod(method string) RouteOption {
 
 func Authorized() RouteOption {
 	return func(r *Route) {
-
+		r.Authorize()
 	}
 }

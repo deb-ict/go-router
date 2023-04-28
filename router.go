@@ -10,21 +10,30 @@ type RouteQuery map[string][]string
 type RouteParams map[string]string
 
 const (
+	routeKey  ContextKey = "router:route"
 	queryKey  ContextKey = "router::query"
 	paramsKey ContextKey = "router::params"
 )
 
 type Router struct {
 	tree        *Node
-	middlewares []middleware
+	middlewares []Middleware
 }
 
 func NewRouter() *Router {
 	r := &Router{
 		tree:        &Node{},
-		middlewares: make([]middleware, 0),
+		middlewares: make([]Middleware, 0),
 	}
 	return r
+}
+
+func CurrentRoute(r *http.Request) *Route {
+	value := r.Context().Value(routeKey)
+	if value == nil {
+		return nil
+	}
+	return value.(*Route)
 }
 
 func Query(r *http.Request) RouteQuery {
@@ -111,7 +120,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		hasHandler = true
 
 		if route.IsMethodAllowed(req.Method) {
-			r.serverHandle(route.Handler, params, w, req)
+			r.serverRoute(route, params, w, req)
 			return
 		}
 	}
@@ -123,14 +132,15 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (r *Router) serverHandle(h http.Handler, p RouteParams, w http.ResponseWriter, req *http.Request) {
+func (r *Router) serverRoute(route *Route, p RouteParams, w http.ResponseWriter, req *http.Request) {
 	query := req.URL.Query()
 
 	ctx := req.Context()
+	ctx = context.WithValue(ctx, routeKey, route)
 	ctx = context.WithValue(ctx, queryKey, query)
 	ctx = context.WithValue(ctx, paramsKey, p)
 
-	handler := h
+	handler := route.Handler
 	for i := len(r.middlewares) - 1; i >= 0; i-- {
 		handler = r.middlewares[i].Middleware(handler)
 	}

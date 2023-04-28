@@ -17,6 +17,7 @@ const (
 type Node struct {
 	Segment string
 	Type    NodeType
+	Parent  *Node
 	Nodes   []*Node
 	Routes  []*Route
 }
@@ -83,6 +84,7 @@ func (n *Node) buildSegment(segments []string) *Node {
 		node = &Node{
 			Segment: nodeValue,
 			Type:    nodeType,
+			Parent:  n,
 		}
 		if n.Nodes == nil {
 			n.Nodes = make([]*Node, 0)

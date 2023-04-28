@@ -314,6 +314,9 @@ func validateDepth(t *testing.T, root *Node, pattern string, depth int) {
 			t.Errorf("Node.BuildTree(%s) failed: Node %s has no child nodes, expected at least 1", pattern, node.Segment)
 			return
 		}
+		if node.Nodes[0].Parent != node {
+			t.Errorf("Node.BuildTree(%s) failed: Node parent incorrect", pattern)
+		}
 		node = node.Nodes[0]
 	}
 

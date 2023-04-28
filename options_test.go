@@ -15,6 +15,12 @@ func Test_AllowedMethod(t *testing.T) {
 	}
 }
 
-func Test_AllowedHeader(t *testing.T) {
+func Test_Authorized(t *testing.T) {
+	route := &Route{}
+	option := Authorized()
+	option(route)
 
+	//TODO: Check if authorization is set on route
+
+	t.Error("Test not implemented")
 }

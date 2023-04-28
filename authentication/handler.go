@@ -1,6 +1,11 @@
 package authentication
 
+import (
+	"net/http"
+)
+
 type AuthenticationHandler interface {
+	HandleAuthentication(r *http.Request) *AuthenticationContext
 	EnsureDefaults()
 }
 

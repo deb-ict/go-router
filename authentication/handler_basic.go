@@ -11,25 +11,43 @@ type BasicAuthenticationHandlerOption func(*BasicAuthenticationHandler)
 type BasicAuthenticationHandler struct {
 }
 
-func (h *BasicAuthenticationHandler) HandleAuthentication(r *http.Request) {
+func NewBasicAuthenticationHandler(opts ...BasicAuthenticationHandlerOption) AuthenticationHandler {
+	h := &BasicAuthenticationHandler{}
+	for _, opt := range opts {
+		opt(h)
+	}
+	h.EnsureDefaults()
+
+	return h
+}
+
+func (h *BasicAuthenticationHandler) HandleAuthentication(r *http.Request) *AuthenticationContext {
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
-		return
+		return nil
 	}
 	if len(auth) < len(BasicTokenPrex) || !equalFold(auth[:len(BasicTokenPrex)], BasicTokenPrex) {
-		return
+		return nil
 	}
-	c, err := base64.StdEncoding.DecodeString(auth[len(BasicTokenPrex):])
+	token := auth[len(BasicTokenPrex):]
+
+	tokenData, err := base64.StdEncoding.DecodeString(token)
 	if err != nil {
-		return
+		return nil
 	}
-	cs := string(c)
-	username, password, ok := strings.Cut(cs, ":")
+	tokenString := string(tokenData)
+	username, password, ok := strings.Cut(tokenString, ":")
 	if !ok {
-		return
+		return nil
 	}
 
 	if username != "my-user" || password != "my-pass" {
-		return
+		return &AuthenticationContext{}
 	}
+
+	return nil
+}
+
+func (h *BasicAuthenticationHandler) EnsureDefaults() {
+
 }

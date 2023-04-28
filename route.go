@@ -7,9 +7,10 @@ import (
 type RouteOption func(*Route)
 
 type Route struct {
-	node    *Node
-	methods []string
-	Handler http.Handler
+	node       *Node
+	methods    []string
+	Handler    http.Handler
+	authorized bool
 }
 
 func (r *Route) AllowedMethod(method string) *Route {
@@ -35,4 +36,12 @@ func (r *Route) IsMethodAllowed(method string) bool {
 		}
 	}
 	return false
+}
+
+func (r *Route) Authorize() {
+	r.authorized = true
+}
+
+func (r *Route) IsAuthorized() bool {
+	return r.authorized
 }

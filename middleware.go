@@ -6,7 +6,7 @@ import (
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-type middleware interface {
+type Middleware interface {
 	Middleware(next http.Handler) http.Handler
 }
 
@@ -16,7 +16,7 @@ func (mwf MiddlewareFunc) Middleware(next http.Handler) http.Handler {
 
 func (r *Router) Use(middlewares ...MiddlewareFunc) {
 	if r.middlewares == nil {
-		r.middlewares = make([]middleware, 0)
+		r.middlewares = make([]Middleware, 0)
 	}
 	for _, m := range middlewares {
 		r.middlewares = append(r.middlewares, m)
