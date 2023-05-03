@@ -4,13 +4,20 @@ import (
 	"net/http"
 )
 
-type BearerAuthenticationHandlerOption func(*BearerAuthenticationHandler)
+type BearerTokenHandlerOption func(*BearerTokenHandler)
 
-type BearerAuthenticationHandler struct {
+type BearerTokenValidator interface {
+	GetBearerAuthenticationData(token string) (ClaimMap, error)
 }
 
-func NewBearerAuthenticationHandler(opts ...BearerAuthenticationHandlerOption) AuthenticationHandler {
-	h := &BearerAuthenticationHandler{}
+type BearerTokenHandler struct {
+	validator BearerTokenValidator
+}
+
+func NewBearerHandler(validator BearerTokenValidator, opts ...BearerTokenHandlerOption) Handler {
+	h := &BearerTokenHandler{
+		validator: validator,
+	}
 	for _, opt := range opts {
 		opt(h)
 	}
@@ -19,7 +26,11 @@ func NewBearerAuthenticationHandler(opts ...BearerAuthenticationHandlerOption) A
 	return h
 }
 
-func (h *BearerAuthenticationHandler) HandleAuthentication(r *http.Request) *AuthenticationContext {
+func (h *BearerTokenHandler) HandleAuthentication(r *http.Request) Context {
+	if h.validator == nil {
+		return nil
+	}
+
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
 		return nil
@@ -29,13 +40,17 @@ func (h *BearerAuthenticationHandler) HandleAuthentication(r *http.Request) *Aut
 	}
 	token := auth[len(BearerTokenPrefix):]
 
-	if token != "my-token" {
-		return &AuthenticationContext{}
+	claims, err := h.validator.GetBearerAuthenticationData(token)
+	if err != nil {
+		return nil
+	}
+	if claims == nil {
+		return nil
 	}
 
-	return nil
+	return NewContext(true, claims)
 }
 
-func (h *BearerAuthenticationHandler) EnsureDefaults() {
+func (h *BearerTokenHandler) EnsureDefaults() {
 
 }

@@ -48,6 +48,34 @@ func Test_Params_Default(t *testing.T) {
 	}
 }
 
+func Test_CurrentRoute(t *testing.T) {
+	type testCase struct {
+		route *Route
+	}
+	tests := []testCase{
+		{&Route{}},
+		{nil},
+	}
+
+	for _, tc := range tests {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		if tc.route != nil {
+			ctx := context.WithValue(req.Context(), routeKey, tc.route)
+			req = req.WithContext(ctx)
+		}
+
+		result := CurrentRoute(req)
+		if tc.route == nil && result != nil {
+			t.Error("CurrentRoute(nil) failed: result is not nil")
+		} else if tc.route != nil && result == nil {
+			t.Error("CurrentRoute(route) failed: result is nil")
+		} else if tc.route != nil && result != tc.route {
+			t.Error("CurrentRoute(route) failed: result not equals route")
+		}
+	}
+
+}
+
 func Test_QueryValues(t *testing.T) {
 	type testCase struct {
 		lookup   string

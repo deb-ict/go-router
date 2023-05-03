@@ -68,18 +68,13 @@ func Param(r *http.Request, key string) string {
 	return Params(r)[key]
 }
 
-func (r *Router) HandleFunc(pattern string, handle http.HandlerFunc, opts ...RouteOption) *Route {
-	return r.Handle(pattern, http.HandlerFunc(handle), opts...)
-}
-
-func (r *Router) Handle(pattern string, handler http.Handler, opts ...RouteOption) *Route {
+func (r *Router) PathPrefix(pattern string, opts ...RouteOption) *Route {
 	node := r.tree.BuildTree(pattern)
 	if node == nil {
 		return nil
 	}
 	route := &Route{
-		node:    node,
-		Handler: handler,
+		node: node,
 	}
 	for _, opt := range opts {
 		opt(route)
@@ -89,6 +84,18 @@ func (r *Router) Handle(pattern string, handler http.Handler, opts ...RouteOptio
 		node.Routes = make([]*Route, 0)
 	}
 	node.Routes = append(node.Routes, route)
+	return route
+}
+
+func (r *Router) HandleFunc(pattern string, handle http.HandlerFunc, opts ...RouteOption) *Route {
+	return r.Handle(pattern, http.HandlerFunc(handle), opts...)
+}
+
+func (r *Router) Handle(pattern string, handler http.Handler, opts ...RouteOption) *Route {
+	route := r.PathPrefix(pattern, opts...)
+	if route != nil {
+		route.Handler = handler
+	}
 	return route
 }
 

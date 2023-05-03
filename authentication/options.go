@@ -1,13 +1,13 @@
 package authentication
 
-func WithApiKeyAuthenticationHeaderName(name string) ApiKeyAuthenticationHandlerOption {
-	return func(h *ApiKeyAuthenticationHandler) {
+func WithApiKeyAuthenticationHeaderName(name string) ApiKeyHandlerOption {
+	return func(h *ApiKeyHandler) {
 		h.HeaderName = name
 	}
 }
 
-func WithApiKeyAuthenticationQueryParamName(name string) ApiKeyAuthenticationHandlerOption {
-	return func(h *ApiKeyAuthenticationHandler) {
+func WithApiKeyAuthenticationQueryParamName(name string) ApiKeyHandlerOption {
+	return func(h *ApiKeyHandler) {
 		h.QueryParamName = name
 	}
 }

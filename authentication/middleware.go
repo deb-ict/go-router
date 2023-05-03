@@ -2,16 +2,18 @@ package authentication
 
 import (
 	"net/http"
+
+	"github.com/deb-ict/go-router"
 )
 
-type AuthenticationMiddlewareOption func(*AuthenticationMiddleware)
+type MiddlewareOption func(*Middleware)
 
-type AuthenticationMiddleware struct {
-	Handler AuthenticationHandler
+type Middleware struct {
+	Handler Handler
 }
 
-func NewAuthenticationMiddleware(handler AuthenticationHandler, opts ...AuthenticationMiddlewareOption) *AuthenticationMiddleware {
-	m := &AuthenticationMiddleware{
+func NewMiddleware(handler Handler, opts ...MiddlewareOption) *Middleware {
+	m := &Middleware{
 		Handler: handler,
 	}
 	for _, opt := range opts {
@@ -22,18 +24,25 @@ func NewAuthenticationMiddleware(handler AuthenticationHandler, opts ...Authenti
 	return m
 }
 
-func (m *AuthenticationMiddleware) Middleware(next http.Handler) http.Handler {
+func UseMiddleware(router *router.Router, handler Handler, opts ...MiddlewareOption) {
+	m := NewMiddleware(handler, opts...)
+	router.Use(m.Middleware)
+}
+
+func (m *Middleware) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if m.Handler == nil {
-			next.ServeHTTP(w, r)
-		} else {
-			auth := m.Handler.HandleAuthentication(r)
-			ctx := SetAuthenticationContext(r.Context(), auth)
-			next.ServeHTTP(w, r.WithContext(ctx))
+		var auth Context = nil
+		if m.Handler != nil {
+			auth = m.Handler.HandleAuthentication(r)
 		}
+		if auth == nil {
+			auth = AnonymouseContext()
+		}
+		ctx := SetContext(r.Context(), auth)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func (m *AuthenticationMiddleware) EnsureDefaults() {
+func (m *Middleware) EnsureDefaults() {
 
 }

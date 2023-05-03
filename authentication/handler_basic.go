@@ -8,11 +8,18 @@ import (
 
 type BasicAuthenticationHandlerOption func(*BasicAuthenticationHandler)
 
-type BasicAuthenticationHandler struct {
+type BasicAuthenticationValidator interface {
+	GetUserAuthenticationData(username string, password string) (ClaimMap, error)
 }
 
-func NewBasicAuthenticationHandler(opts ...BasicAuthenticationHandlerOption) AuthenticationHandler {
-	h := &BasicAuthenticationHandler{}
+type BasicAuthenticationHandler struct {
+	validator BasicAuthenticationValidator
+}
+
+func NewBasicAuthenticationHandler(validator BasicAuthenticationValidator, opts ...BasicAuthenticationHandlerOption) Handler {
+	h := &BasicAuthenticationHandler{
+		validator: validator,
+	}
 	for _, opt := range opts {
 		opt(h)
 	}
@@ -21,7 +28,11 @@ func NewBasicAuthenticationHandler(opts ...BasicAuthenticationHandlerOption) Aut
 	return h
 }
 
-func (h *BasicAuthenticationHandler) HandleAuthentication(r *http.Request) *AuthenticationContext {
+func (h *BasicAuthenticationHandler) HandleAuthentication(r *http.Request) Context {
+	if h.validator == nil {
+		return nil
+	}
+
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
 		return nil
@@ -41,11 +52,15 @@ func (h *BasicAuthenticationHandler) HandleAuthentication(r *http.Request) *Auth
 		return nil
 	}
 
-	if username != "my-user" || password != "my-pass" {
-		return &AuthenticationContext{}
+	claims, err := h.validator.GetUserAuthenticationData(username, password)
+	if err == nil {
+		return nil
+	}
+	if claims == nil {
+		return nil
 	}
 
-	return nil
+	return NewContext(true, claims)
 }
 
 func (h *BasicAuthenticationHandler) EnsureDefaults() {

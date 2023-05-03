@@ -7,15 +7,18 @@ import (
 	"github.com/deb-ict/go-router/authentication"
 )
 
-type AuthorizationMiddlewareOption func(*AuthorizationMiddleware)
+type MiddlewareOption func(*Middleware)
 
-type AuthorizationMiddleware struct {
+type Middleware struct {
 	UnauthorizedHandler http.Handler
 	ForbiddenHandler    http.Handler
+	policies            map[string]Policy
 }
 
-func NewAuthorizationMiddleware(opts ...AuthorizationMiddlewareOption) *AuthorizationMiddleware {
-	m := &AuthorizationMiddleware{}
+func NewMiddleware(opts ...MiddlewareOption) *Middleware {
+	m := &Middleware{
+		policies: make(map[string]Policy),
+	}
 	for _, opt := range opts {
 		opt(m)
 	}
@@ -24,23 +27,38 @@ func NewAuthorizationMiddleware(opts ...AuthorizationMiddlewareOption) *Authoriz
 	return m
 }
 
-func (m *AuthorizationMiddleware) Middleware(next http.Handler) http.Handler {
+func UseMiddleware(router *router.Router, opts ...MiddlewareOption) {
+	m := NewMiddleware(opts...)
+	router.Use(m.Middleware)
+}
+
+func (m *Middleware) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		route := router.CurrentRoute(r)
-		auth := authentication.GetAuthenticationContext(r.Context())
+		auth := authentication.GetContext(r.Context())
 		if route != nil && route.IsAuthorized() {
 			if auth == nil {
-				w.WriteHeader(http.StatusUnauthorized)
+				m.UnauthorizedHandler.ServeHTTP(w, r)
 				return
 			}
 
-			//TODO: Check for authorization policies and return forbidden
+			policyName := route.GetAuthorizationPolicy()
+			policy, ok := m.policies[policyName]
+			if !ok {
+				m.UnauthorizedHandler.ServeHTTP(w, r)
+				return
+			}
+
+			if !policy.MeetsRequirements(auth) {
+				m.ForbiddenHandler.ServeHTTP(w, r)
+				return
+			}
 		}
 		next.ServeHTTP(w, r)
 	})
 }
 
-func (m *AuthorizationMiddleware) EnsureDefaults() {
+func (m *Middleware) EnsureDefaults() {
 	if m.UnauthorizedHandler == nil {
 		m.UnauthorizedHandler = http.HandlerFunc(UnauthorizedHandler)
 	}

@@ -6,8 +6,8 @@ func AllowedMethod(method string) RouteOption {
 	}
 }
 
-func Authorized() RouteOption {
+func Authorized(policyName string) RouteOption {
 	return func(r *Route) {
-		r.Authorize()
+		r.Authorize(policyName)
 	}
 }

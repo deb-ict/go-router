@@ -4,8 +4,8 @@ import (
 	"net/http"
 )
 
-type AuthenticationHandler interface {
-	HandleAuthentication(r *http.Request) *AuthenticationContext
+type Handler interface {
+	HandleAuthentication(r *http.Request) Context
 	EnsureDefaults()
 }
 

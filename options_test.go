@@ -17,10 +17,13 @@ func Test_AllowedMethod(t *testing.T) {
 
 func Test_Authorized(t *testing.T) {
 	route := &Route{}
-	option := Authorized()
+	option := Authorized("test")
 	option(route)
 
-	//TODO: Check if authorization is set on route
-
-	t.Error("Test not implemented")
+	if !route.IsAuthorized() {
+		t.Error("Route.IsAuthorized() failed: got false, expected true")
+	}
+	if route.GetAuthorizationPolicy() != "test" {
+		t.Errorf("route.GetAuthorizationPolicy() failed: got %v, expected test", route.GetAuthorizationPolicy())
+	}
 }
