@@ -16,7 +16,7 @@ type Claim struct {
 	Values []string
 }
 
-type ClaimMap map[string]Claim
+type ClaimMap map[string]*Claim
 
 func (c *Claim) First() string {
 	if len(c.Values) > 0 {
@@ -44,10 +44,10 @@ func (c *Claim) HasValue(value string) bool {
 	return false
 }
 
-func (m ClaimMap) GetClaim(name string) Claim {
+func (m ClaimMap) GetClaim(name string) *Claim {
 	v, ok := m[name]
 	if !ok {
-		v = Claim{
+		v = &Claim{
 			Name:   name,
 			Values: make([]string, 0),
 		}
@@ -66,10 +66,9 @@ func (m ClaimMap) AddClaim(name string, value string) {
 func (m ClaimMap) SetClaimSingleValue(name string, value string) {
 	claim := m.GetClaim(name)
 	if len(claim.Values) > 0 {
-		claim.Values[0] = value
-	} else {
-		claim.Values = append(claim.Values, value)
+		claim.Values = make([]string, 0)
 	}
+	claim.Values = append(claim.Values, value)
 }
 
 func (m ClaimMap) AddRoles(values ...string) {
