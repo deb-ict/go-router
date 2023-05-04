@@ -16,7 +16,6 @@ type Context interface {
 	GetName() string
 	GetRoles() []string
 	GetScopes() []string
-	GetClaimMap() ClaimMap
 	GetClaim(name string) *Claim
 	GetClaimValue(name string, index int) string
 	HasClaim(name string) bool
@@ -80,10 +79,6 @@ func (ctx *authenticationContext) GetRoles() []string {
 func (ctx *authenticationContext) GetScopes() []string {
 	claim := ctx.GetClaim(ClaimScope)
 	return claim.Values
-}
-
-func (ctx *authenticationContext) GetClaimMap() ClaimMap {
-	return ctx.claims
 }
 
 func (ctx *authenticationContext) GetClaim(name string) *Claim {
