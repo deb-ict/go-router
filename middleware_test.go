@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+type middlewareMock struct {
+}
+
+func (m *middlewareMock) Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+}
+
 func Test_Router_Use(t *testing.T) {
 	middleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
@@ -15,10 +22,38 @@ func Test_Router_Use(t *testing.T) {
 	router.Use(middleware)
 
 	if router.middlewares == nil {
-		t.Errorf("Router.Use(MiddlewareFunc) failed: slice not initialized")
+		t.Error("Router.Use(MiddlewareFunc) failed: slice not initialized")
 	}
 	if len(router.middlewares) != 1 {
-		t.Errorf("Router.Use(MiddlewareFunc) failed: middleware not appended to slice")
+		t.Error("Router.Use(MiddlewareFunc) failed: middleware not appended to slice")
+	}
+}
+
+func Test_Router_Middleware_ReturnsEmptyList(t *testing.T) {
+	router := &Router{
+		middlewares: nil,
+	}
+	result := router.Middlewares()
+	if result == nil {
+		t.Error("Router.Middlewares() failed: Middleware collection not initialized")
+	}
+	if len(result) != 0 {
+		t.Error("Router.Middlewares() failed: Middleware collection not empty")
+	}
+}
+
+func Test_Router_Middleware_ReturnsMiddlewares(t *testing.T) {
+	middleware := &middlewareMock{}
+	router := &Router{
+		middlewares: []Middleware{middleware},
+	}
+
+	result := router.Middlewares()
+	if result == nil {
+		t.Error("Router.Middlewares() failed: Middleware collection not empty not initialized")
+	}
+	if len(result) != 1 {
+		t.Error("Router.Middlewares() failed: Middleware not added to collection")
 	}
 }
 

@@ -4,20 +4,20 @@ import (
 	"net/http"
 )
 
-type ApiKeyHandlerOption func(*ApiKeyHandler)
+type ApiKeyAuthenticationHandlerOption func(*ApiKeyAuthenticationHandler)
 
-type ApiKeyValidator interface {
+type ApiKeyAuthenticationValidator interface {
 	GetApiKeyAuthenticationData(apiKey string) (ClaimMap, error)
 }
 
-type ApiKeyHandler struct {
-	validator      ApiKeyValidator
+type ApiKeyAuthenticationHandler struct {
+	validator      ApiKeyAuthenticationValidator
 	HeaderName     string
 	QueryParamName string
 }
 
-func NewApiKeyHandler(validator ApiKeyValidator, opts ...ApiKeyHandlerOption) Handler {
-	h := &ApiKeyHandler{
+func NewApiKeyAuthenticationHandler(validator ApiKeyAuthenticationValidator, opts ...ApiKeyAuthenticationHandlerOption) Handler {
+	h := &ApiKeyAuthenticationHandler{
 		validator: validator,
 	}
 	for _, opt := range opts {
@@ -28,7 +28,7 @@ func NewApiKeyHandler(validator ApiKeyValidator, opts ...ApiKeyHandlerOption) Ha
 	return h
 }
 
-func (h *ApiKeyHandler) HandleAuthentication(r *http.Request) Context {
+func (h *ApiKeyAuthenticationHandler) HandleAuthentication(r *http.Request) Context {
 	if h.validator == nil {
 		return nil
 	}
@@ -49,7 +49,7 @@ func (h *ApiKeyHandler) HandleAuthentication(r *http.Request) Context {
 	return NewContext(true, claims)
 }
 
-func (h *ApiKeyHandler) EnsureDefaults() {
+func (h *ApiKeyAuthenticationHandler) EnsureDefaults() {
 	if h.HeaderName == "" {
 		h.HeaderName = DefaultApiKeyHeaderName
 	}

@@ -1,23 +1,98 @@
 package authentication
 
 import (
+	"context"
 	"testing"
 )
 
-func Test_NewContext(t *testing.T) {
+func Test_NewContext_SetsClaims(t *testing.T) {
+	claims := make(ClaimMap)
+	claims["test"] = &Claim{
+		Name:   "test",
+		Values: []string{"value"},
+	}
+	context := NewContext(true, claims)
+	internal := context.(*authenticationContext)
 
+	if !internal.authenticated {
+		t.Error("NewContext() failed: IsAuthentication not set")
+	}
+	if len(internal.claims) != 1 {
+		t.Error("NewContext() failed: Initial claim value not found")
+	}
+}
+
+func Test_NewContext_CreatesEmptyClaims(t *testing.T) {
+	context := NewContext(true, nil)
+	internal := context.(*authenticationContext)
+
+	if !internal.authenticated {
+		t.Error("NewContext() failed: IsAuthentication not set")
+	}
+	if internal.claims == nil {
+		t.Error("NewContext() failed: Claims not initialized")
+	}
 }
 
 func Test_AnonymousContext(t *testing.T) {
+	context := AnonymouseContext()
+	internal := context.(*authenticationContext)
 
+	if internal.authenticated {
+		t.Error("AnonymousContext() failed: IsAuthentication is set true")
+	}
+	c, ok := internal.claims[ClaimName]
+	if !ok {
+		t.Error("AnonymousContext() failed: Name claim not set")
+	} else if c.First() != "anonymous" {
+		t.Error("AnonymousContext() failed: Name claim value must be anonymous")
+	}
 }
 
-func Test_GetContext(t *testing.T) {
+func Test_GetContext_ReturnsAnonymousContextWhenNotSet(t *testing.T) {
+	ctx := context.TODO()
+	context := GetContext(ctx)
+	if context == nil {
+		t.Error("GetContext() failed: No default context created")
+	}
+	if context.IsAuthenticated() {
+		t.Error("GetContext() failed: Default context set as authenticated")
+	}
+	if context.GetName() != "anonymous" {
+		t.Error("GetContext() failed: Default context name not set to anonymous")
+	}
+}
 
+func Test_GetContext_ReturnsContext(t *testing.T) {
+	claims := make(ClaimMap)
+	claims["test"] = &Claim{
+		Name:   "test",
+		Values: []string{"value"},
+	}
+	expected := NewContext(true, claims)
+	ctx := context.TODO()
+	ctx = context.WithValue(ctx, contextKey, expected)
+
+	result := GetContext(ctx)
+	if result != expected {
+		t.Error("SetContext() failed: authentication context not set")
+	}
 }
 
 func Test_SetContext(t *testing.T) {
+	claims := make(ClaimMap)
+	claims["test"] = &Claim{
+		Name:   "test",
+		Values: []string{"value"},
+	}
+	expected := NewContext(true, claims)
+	ctx := context.TODO()
+	ctx = SetContext(ctx, expected)
 
+	result := ctx.Value(contextKey)
+	if result != expected {
+		t.Error("SetContext() failed: authentication context not set")
+	}
 }
 
 func Test_AuthenticationContext_IsAuthenticated(t *testing.T) {

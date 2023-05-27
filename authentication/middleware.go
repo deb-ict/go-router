@@ -39,7 +39,10 @@ func (m *Middleware) Middleware(next http.Handler) http.Handler {
 			auth = AnonymouseContext()
 		}
 		ctx := SetContext(r.Context(), auth)
-		next.ServeHTTP(w, r.WithContext(ctx))
+
+		if next != nil {
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
 	})
 }
 

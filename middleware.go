@@ -22,3 +22,10 @@ func (r *Router) Use(middlewares ...MiddlewareFunc) {
 		r.middlewares = append(r.middlewares, m)
 	}
 }
+
+func (r *Router) Middlewares() []Middleware {
+	if r.middlewares == nil {
+		r.middlewares = make([]Middleware, 0)
+	}
+	return r.middlewares
+}

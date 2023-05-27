@@ -53,7 +53,7 @@ func (h *BasicAuthenticationHandler) HandleAuthentication(r *http.Request) Conte
 	}
 
 	claims, err := h.validator.GetUserAuthenticationData(username, password)
-	if err == nil {
+	if err != nil {
 		return nil
 	}
 	if claims == nil {
