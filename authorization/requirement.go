@@ -54,10 +54,7 @@ func (r *userRequirement) MeetsRequirement(auth authentication.Context) bool {
 
 	claim := auth.GetClaim(authentication.ClaimName)
 	name := claim.First()
-	if name == "" {
-		return false
-	}
-	return true
+	return name != ""
 }
 
 func (r *claimRequirement) MeetsRequirement(auth authentication.Context) bool {

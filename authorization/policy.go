@@ -34,6 +34,9 @@ func (p *policy) GetRequirements() []Requirement {
 }
 
 func (p *policy) MeetsRequirements(auth authentication.Context) bool {
+	if auth == nil {
+		return false
+	}
 	for _, r := range p.GetRequirements() {
 		if !r.MeetsRequirement(auth) {
 			return false
