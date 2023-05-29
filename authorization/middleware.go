@@ -35,8 +35,8 @@ func UseMiddleware(router *router.Router, opts ...MiddlewareOption) {
 func (m *Middleware) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		route := router.CurrentRoute(r)
-		auth := authentication.GetContext(r.Context())
 		if route != nil && route.IsAuthorized() {
+			auth := authentication.GetContext(r.Context())
 			if !auth.IsAuthenticated() {
 				m.UnauthorizedHandler.ServeHTTP(w, r)
 				return

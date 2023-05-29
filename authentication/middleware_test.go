@@ -45,13 +45,13 @@ func Test_NewMiddleware(t *testing.T) {
 	m := NewMiddleware(h, o)
 
 	if m == nil {
-		t.Error("NewMiddleware failed: No instance")
+		t.Error("NewMiddleware() failed: No instance")
 	} else {
 		if m.Handler == nil || m.Handler != h {
-			t.Error("NewMiddleware failed: Handler not set")
+			t.Error("NewMiddleware() failed: Handler not set")
 		}
 		if optionCalled != 1 {
-			t.Error("NewMiddleware failed: Options not applied")
+			t.Error("NewMiddleware() failed: Options not applied")
 		}
 	}
 }
@@ -62,7 +62,7 @@ func Test_UseMiddleware(t *testing.T) {
 	UseMiddleware(router, handler)
 
 	if len(router.Middlewares()) != 1 {
-		t.Error("UseMiddleware failed: Middleware not set on router")
+		t.Error("UseMiddleware() failed: Middleware not set on router")
 	}
 }
 
