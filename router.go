@@ -139,13 +139,17 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (r *Router) serverRoute(route *Route, p RouteParams, w http.ResponseWriter, req *http.Request) {
-	query := req.URL.Query()
+func (r *Router) serverRoute(route *Route, params RouteParams, w http.ResponseWriter, req *http.Request) {
+	urlValues := req.URL.Query()
+	query := make(RouteQuery)
+	for key, values := range urlValues {
+		query[key] = values
+	}
 
 	ctx := req.Context()
 	ctx = context.WithValue(ctx, routeKey, route)
 	ctx = context.WithValue(ctx, queryKey, query)
-	ctx = context.WithValue(ctx, paramsKey, p)
+	ctx = context.WithValue(ctx, paramsKey, params)
 
 	handler := route.Handler
 	for i := len(r.middlewares) - 1; i >= 0; i-- {
