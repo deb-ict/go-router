@@ -125,8 +125,8 @@ func Test_Node_buildSegment(t *testing.T) {
 		expectedExisting bool
 		expectedNode     *Node
 	}
-	root := &Node{Segment: "self"}
-	node := &Node{Segment: "next"}
+	root := &Node{Segment: "self", Type: NodeTypePath}
+	node := &Node{Segment: "next", Type: NodeTypePath}
 	nodeWithHandler := &Node{
 		Segment: "next",
 		Routes: []*Route{

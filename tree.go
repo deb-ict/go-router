@@ -67,11 +67,13 @@ func (n *Node) buildSegment(segments []string) *Node {
 		return n.buildSegment(segments[1:])
 	}
 	segment := strings.ToLower(segments[0])
+	nodeType := n.getNodeType(segment)
+	nodeValue := n.getNodeValue(segment, nodeType)
 
 	// Find existing node
 	var node *Node
 	for _, cn := range n.Nodes {
-		if cn.Segment == segment {
+		if cn.Segment == nodeValue && cn.Type == nodeType {
 			node = cn
 			break
 		}
@@ -79,8 +81,6 @@ func (n *Node) buildSegment(segments []string) *Node {
 
 	// Create a node for the segment and append to parent
 	if node == nil /*|| (node.hasHandler() && numSegments == 1)*/ {
-		nodeType := n.getNodeType(segment)
-		nodeValue := n.getNodeValue(segment, nodeType)
 		node = &Node{
 			Segment: nodeValue,
 			Type:    nodeType,
