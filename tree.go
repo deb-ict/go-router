@@ -110,22 +110,39 @@ func (n *Node) findSegment(segments []string, params RouteParams) *Node {
 	}
 
 	segment := strings.ToLower(segments[0])
-	child := n.findChildSegment(segment, params)
-	if child != nil {
-		return child.findSegment(segments[1:], params)
-	}
-	return nil
+	return n.findChildSegment(segment, segments, params)
+	/*
+		if child != nil {
+			return child.findSegment(segments[1:], params)
+		}
+		return nil
+	*/
 }
 
-func (n *Node) findChildSegment(segment string, params RouteParams) *Node {
+func (n *Node) findChildSegment(segment string, segments []string, params RouteParams) *Node {
 	if n.Nodes != nil {
 		for _, node := range n.Nodes {
 			if node.Type == NodeTypeParam {
-				params[node.Segment] = segment
-				return node
+				if len(segments) > 1 {
+					next := node.findChildSegment(segments[1], segments[1:], params)
+					if next != nil {
+						params[node.Segment] = segment
+						return next
+					}
+				} else {
+					params[node.Segment] = segment
+					return node
+				}
 			}
 			if node.Type == NodeTypePath && node.Segment == segment {
-				return node
+				if len(segments) > 1 {
+					next := node.findChildSegment(segments[1], segments[1:], params)
+					if next != nil {
+						return next
+					}
+				} else {
+					return node
+				}
 			}
 		}
 	}
