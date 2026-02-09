@@ -11,13 +11,13 @@ func apiHandler(w http.ResponseWriter, r* http.Request) {
     
 }
 
-router := NewRouter()
+router := router.NewRouter()
 router.HandleFunc("/api/example", apiHandler)
 ```
 
 ## Middlewares
 ```
-router := NewRouter()
+router := router.NewRouter()
 router.Use(authenticationMiddleware, authorizationMiddleware)
 ```
 
