@@ -1,6 +1,7 @@
 package router
 
 import (
+	"slices"
 	"strings"
 )
 
@@ -43,7 +44,10 @@ func (n *Node) FindNode(pattern string, params RouteParams) *Node {
 	}
 
 	segments := strings.Split(n.getPath(pattern), "/")
-	return n.findSegment(segments[1:], params)
+	segments = slices.DeleteFunc(segments, func(s string) bool {
+		return s == ""
+	})
+	return n.findSegment(segments, params)
 }
 
 func (n *Node) getPath(pattern string) string {
