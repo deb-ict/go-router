@@ -195,20 +195,20 @@ func Test_Node_findSegment(t *testing.T) {
 func Test_Node_findChildSegment(t *testing.T) {
 	type testCase struct {
 		node     *Node
-		segment  string
+		segment  []string
 		expected *Node
 	}
 	pathNode := &Node{Segment: "path", Type: NodeTypePath}
 	paramNode := &Node{Segment: "{param}", Type: NodeTypeParam}
 	tests := []testCase{
-		{&Node{Nodes: []*Node{pathNode}}, "path", pathNode},
-		{&Node{Nodes: []*Node{paramNode}}, "path", paramNode},
-		{&Node{Nodes: []*Node{pathNode}}, "notfound", nil},
+		{&Node{Nodes: []*Node{pathNode}}, []string{"path"}, pathNode},
+		{&Node{Nodes: []*Node{paramNode}}, []string{"path"}, paramNode},
+		{&Node{Nodes: []*Node{pathNode}}, []string{"notfound"}, nil},
 	}
 
 	for _, tc := range tests {
 		params := make(map[string]string)
-		result := tc.node.findChildSegment(tc.segment, params)
+		result := tc.node.findChildSegment(tc.segment[0], tc.segment, params)
 		if result != tc.expected {
 			t.Errorf("Node.findChildSegment(%s) failed: got %v, expected %v", tc.segment, nodeName(result), nodeName(tc.expected))
 		}

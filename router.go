@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"net/http"
+	"strings"
 )
 
 type ContextKey string
@@ -65,7 +66,8 @@ func Params(r *http.Request) RouteParams {
 }
 
 func Param(r *http.Request, key string) string {
-	return Params(r)[key]
+	normalizedKey := strings.ToLower(key)
+	return Params(r)[normalizedKey]
 }
 
 func (r *Router) PathPrefix(pattern string, opts ...RouteOption) *Route {
