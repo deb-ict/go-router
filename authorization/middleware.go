@@ -66,3 +66,12 @@ func (m *Middleware) EnsureDefaults() {
 		m.ForbiddenHandler = http.HandlerFunc(ForbiddenHandler)
 	}
 }
+
+func (m *Middleware) SetPolicy(policy Policy) {
+	m.policies[policy.GetName()] = policy
+}
+
+func (m *Middleware) GetPolicy(name string) (Policy, bool) {
+	policy, ok := m.policies[name]
+	return policy, ok
+}

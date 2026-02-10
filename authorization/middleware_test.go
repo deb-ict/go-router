@@ -49,7 +49,7 @@ func Test_UseMiddleware(t *testing.T) {
 }
 
 func Test_Middleware(t *testing.T) {
-	var routeContextKey router.ContextKey = "router:route"
+	var routeContextKey router.ContextKey = "router::route"
 
 	unauthorizedCalled := 0
 	unauthorized := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +110,7 @@ func Test_Middleware(t *testing.T) {
 }
 
 func Test_Middleware_RequirementFailed(t *testing.T) {
-	var routeContextKey router.ContextKey = "router:route"
+	var routeContextKey router.ContextKey = "router::route"
 
 	unauthorizedCalled := 0
 	unauthorized := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -171,7 +171,7 @@ func Test_Middleware_RequirementFailed(t *testing.T) {
 }
 
 func Test_Middleware_PolicyNotFound(t *testing.T) {
-	var routeContextKey router.ContextKey = "router:route"
+	var routeContextKey router.ContextKey = "router::route"
 
 	unauthorizedCalled := 0
 	unauthorized := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -219,7 +219,7 @@ func Test_Middleware_PolicyNotFound(t *testing.T) {
 }
 
 func Test_Middleware_Unauthorized(t *testing.T) {
-	var routeContextKey router.ContextKey = "router:route"
+	var routeContextKey router.ContextKey = "router::route"
 
 	unauthorizedCalled := 0
 	unauthorized := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -262,7 +262,7 @@ func Test_Middleware_Unauthorized(t *testing.T) {
 }
 
 func Test_Middleware_NoAuthorizationPolicy(t *testing.T) {
-	var routeContextKey router.ContextKey = "router:route"
+	var routeContextKey router.ContextKey = "router::route"
 
 	unauthorizedCalled := 0
 	unauthorized := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

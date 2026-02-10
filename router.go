@@ -11,7 +11,7 @@ type RouteQuery map[string][]string
 type RouteParams map[string]string
 
 const (
-	routeKey  ContextKey = "router:route"
+	routeKey  ContextKey = "router::route"
 	queryKey  ContextKey = "router::query"
 	paramsKey ContextKey = "router::params"
 )
@@ -26,6 +26,7 @@ func NewRouter() *Router {
 		tree:        &Node{},
 		middlewares: make([]Middleware, 0),
 	}
+	r.tree.Router = r
 	return r
 }
 
@@ -96,7 +97,7 @@ func (r *Router) HandleFunc(pattern string, handle http.HandlerFunc, opts ...Rou
 func (r *Router) Handle(pattern string, handler http.Handler, opts ...RouteOption) *Route {
 	route := r.PathPrefix(pattern, opts...)
 	if route != nil {
-		route.Handler = handler
+		route.Handle(handler)
 	}
 	return route
 }
@@ -106,7 +107,7 @@ func (r *Router) findRoute(pattern string, params RouteParams) []*Route {
 	if node == nil {
 		return nil
 	}
-	if node.Routes == nil || len(node.Routes) == 0 {
+	if len(node.Routes) == 0 {
 		return nil
 	}
 	return node.Routes
@@ -116,14 +117,14 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 	params := make(RouteParams)
 	routes := r.findRoute(path, params)
-	if routes == nil || len(routes) == 0 {
+	if len(routes) == 0 {
 		http.NotFound(w, req)
 		return
 	}
 
 	hasHandler := false
 	for _, route := range routes {
-		if route.Handler == nil {
+		if route.handler == nil {
 			continue
 		}
 		hasHandler = true
@@ -153,9 +154,26 @@ func (r *Router) serverRoute(route *Route, params RouteParams, w http.ResponseWr
 	ctx = context.WithValue(ctx, queryKey, query)
 	ctx = context.WithValue(ctx, paramsKey, params)
 
-	handler := route.Handler
-	for i := len(r.middlewares) - 1; i >= 0; i-- {
-		handler = r.middlewares[i].Middleware(handler)
+	middlewares := r.getMiddleware(route.node, nil)
+
+	handler := route.handler
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		handler = middlewares[i].Middleware(handler)
 	}
 	handler.ServeHTTP(w, req.WithContext(ctx))
+}
+
+func (r *Router) getMiddleware(node *Node, middlewares []Middleware) []Middleware {
+	if middlewares == nil {
+		middlewares = make([]Middleware, 0)
+	}
+	if node == nil {
+		return middlewares
+	}
+	middlewares = r.getMiddleware(node.Parent, middlewares)
+
+	if node.Router != nil {
+		middlewares = append(middlewares, node.Router.middlewares...)
+	}
+	return middlewares
 }

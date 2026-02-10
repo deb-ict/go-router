@@ -21,6 +21,7 @@ type Node struct {
 	Parent  *Node
 	Nodes   []*Node
 	Routes  []*Route
+	Router  *Router
 }
 
 func (n *Node) BuildTree(pattern string) *Node {

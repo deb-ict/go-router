@@ -9,8 +9,17 @@ type RouteOption func(*Route)
 type Route struct {
 	node           *Node
 	methods        []string
-	Handler        http.Handler
+	handler        http.Handler
 	authPolicyName string
+}
+
+func (r *Route) SubRouter() *Router {
+	router := &Router{
+		tree:        r.node,
+		middlewares: make([]Middleware, 0),
+	}
+	r.node.Router = router
+	return router
 }
 
 func (r *Route) AllowedMethod(method string) *Route {
@@ -26,8 +35,15 @@ func (r *Route) AllowedMethod(method string) *Route {
 	return r
 }
 
+func (r *Route) AllowedMethods(method ...string) *Route {
+	for _, m := range method {
+		r.AllowedMethod(m)
+	}
+	return r
+}
+
 func (r *Route) IsMethodAllowed(method string) bool {
-	if r.methods == nil || len(r.methods) == 0 {
+	if len(r.methods) == 0 {
 		return true
 	}
 	for _, m := range r.methods {
@@ -48,4 +64,13 @@ func (r *Route) IsAuthorized() bool {
 
 func (r *Route) GetAuthorizationPolicy() string {
 	return r.authPolicyName
+}
+
+func (r *Route) Handle(handler http.Handler) *Route {
+	r.handler = handler
+	return r
+}
+
+func (r *Route) HandleFunc(handle http.HandlerFunc) *Route {
+	return r.Handle(http.HandlerFunc(handle))
 }
