@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"net/http"
+	"reflect"
 	"testing"
 )
 
@@ -181,8 +182,8 @@ func Test_Router_HandleFunc(t *testing.T) {
 				if result.node == nil {
 					t.Errorf("Router.HandleFunc(%s) failed: expected instance.node not <nil>", tc.pattern)
 				}
-				if result.Handler == nil {
-					t.Errorf("Router.HandleFunc(%s) failed: expected instance.Handler not <nil>", tc.pattern)
+				if result.handler == nil {
+					t.Errorf("Router.HandleFunc(%s) failed: expected instance.handler not <nil>", tc.pattern)
 				}
 				if !optionApplied {
 					t.Errorf("Router.HandleFunc(%s) failed: option not applied", tc.pattern)
@@ -222,8 +223,8 @@ func Test_Router_Handle(t *testing.T) {
 				if result.node == nil {
 					t.Errorf("Router.Handle(%s) failed: expected instance.node not <nil>", tc.pattern)
 				}
-				if result.Handler == nil {
-					t.Errorf("Router.Handle(%s) failed: expected instance.Handler not <nil>", tc.pattern)
+				if result.handler == nil {
+					t.Errorf("Router.Handle(%s) failed: expected instance.handler not <nil>", tc.pattern)
 				}
 				if !optionApplied {
 					t.Errorf("Router.Handle(%s) failed: option not applied", tc.pattern)
@@ -306,6 +307,44 @@ func Test_Router_ServeHttp(t *testing.T) {
 		if rsp.statusCode != tc.expected {
 			t.Errorf("Router.ServeHTTP(%s) failed: invalid status code: got %v, expected %v", tc.pattern, rsp.statusCode, tc.expected)
 		}
+	}
+}
+
+func Test_Router_ServeHttp_SubRouter(t *testing.T) {
+	middlewareCalls := make([]string, 0)
+	handle := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	rootMiddleware := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			middlewareCalls = append(middlewareCalls, "root")
+			h.ServeHTTP(w, r)
+		})
+	}
+	subMiddleware := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			middlewareCalls = append(middlewareCalls, "sub")
+			h.ServeHTTP(w, r)
+		})
+	}
+
+	router := NewRouter()
+	router.Use(rootMiddleware)
+
+	subRouter := router.PathPrefix("/api/v1").SubRouter()
+	subRouter.Use(subMiddleware)
+	subRouter.HandleFunc("/items", handle)
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/items", nil)
+	rsp := &responseWriterMock{}
+	router.ServeHTTP(rsp, req)
+
+	if rsp.statusCode != http.StatusOK {
+		t.Errorf("Router.ServeHTTP(%s) failed: invalid status code: got %v, expected %v", "/api/v1/items", rsp.statusCode, http.StatusOK)
+	}
+	expectedMiddlewareCalls := []string{"root", "sub"}
+	if !reflect.DeepEqual(middlewareCalls, expectedMiddlewareCalls) {
+		t.Errorf("Router.ServeHTTP(%s) failed: middleware calls = %v, expected %v", "/api/v1/items", middlewareCalls, expectedMiddlewareCalls)
 	}
 }
 

@@ -15,6 +15,22 @@ func Test_AllowedMethod(t *testing.T) {
 	}
 }
 
+func Test_AllowedMethods(t *testing.T) {
+	route := &Route{}
+	option := AllowedMethods(http.MethodGet, http.MethodPost)
+	option(route)
+
+	if route.methods == nil || len(route.methods) != 2 {
+		t.Errorf("AllowedMethods() option failed: methods not added as allowed to route")
+	}
+	expected := []string{http.MethodGet, http.MethodPost}
+	for i, method := range expected {
+		if route.methods[i] != method {
+			t.Errorf("AllowedMethods() option failed: method at index %d is %s, expected %s", i, route.methods[i], method)
+		}
+	}
+}
+
 func Test_Authorized(t *testing.T) {
 	route := &Route{}
 	option := Authorized("test")

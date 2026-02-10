@@ -35,6 +35,34 @@ func Test_Route_AllowedMethod(t *testing.T) {
 	}
 }
 
+func Test_Route_AllowedMethods(t *testing.T) {
+	type testCase struct {
+		route    *Route
+		methods  []string
+		expected int
+	}
+	tests := []testCase{
+		{&Route{methods: nil}, []string{http.MethodGet, http.MethodPost}, 2},
+		{&Route{methods: []string{}}, []string{http.MethodGet, http.MethodPost}, 2},
+		{&Route{methods: []string{http.MethodGet}}, []string{http.MethodGet, http.MethodPost}, 2},
+	}
+
+	for _, tc := range tests {
+		result := tc.route.AllowedMethods(tc.methods...)
+		if result != tc.route {
+			t.Errorf("Route.AllowedMethods(%v) failed: result not equals instance", tc.methods)
+		}
+		if tc.route.methods == nil {
+			t.Errorf("Route.AllowedMethods(%v) failed: method array not initialized", tc.methods)
+		} else {
+			len := len(tc.route.methods)
+			if len != tc.expected {
+				t.Errorf("Route.AllowedMethods(%v) failed: invalid items in array: got %v, expected %v", tc.methods, len, tc.expected)
+			}
+		}
+	}
+}
+
 func Test_Route_IsMethodAllowed(t *testing.T) {
 	type testCase struct {
 		route    *Route

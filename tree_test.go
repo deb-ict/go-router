@@ -130,7 +130,7 @@ func Test_Node_buildSegment(t *testing.T) {
 	nodeWithHandler := &Node{
 		Segment: "next",
 		Routes: []*Route{
-			{Handler: http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})},
+			{handler: http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})},
 		},
 	}
 	rootWithChild := &Node{
@@ -310,7 +310,7 @@ func appendTestNode(parent *Node, segment string) *Node {
 func validateDepth(t *testing.T, root *Node, pattern string, depth int) {
 	node := root
 	for i := 0; i < depth; i++ {
-		if node.Nodes == nil || len(node.Nodes) == 0 {
+		if len(node.Nodes) == 0 {
 			t.Errorf("Node.BuildTree(%s) failed: Node %s has no child nodes, expected at least 1", pattern, node.Segment)
 			return
 		}
@@ -320,7 +320,7 @@ func validateDepth(t *testing.T, root *Node, pattern string, depth int) {
 		node = node.Nodes[0]
 	}
 
-	if node.Nodes != nil && len(node.Nodes) > 0 {
+	if len(node.Nodes) > 0 {
 		t.Errorf("Node.BuildTree(%s) failed: Node %s has child nodes, expected 0", pattern, node.Segment)
 	}
 }
@@ -328,7 +328,7 @@ func validateDepth(t *testing.T, root *Node, pattern string, depth int) {
 func validateChildNode(t *testing.T, root *Node, pattern string, depth int, segment string) {
 	node := root
 	for i := 0; i < depth; i++ {
-		if node.Nodes == nil || len(node.Nodes) == 0 {
+		if len(node.Nodes) == 0 {
 			t.Errorf("Node.BuildTree(%s) failed: Node %s has no child nodes, expected at least 1", pattern, node.Segment)
 			return
 		}
